@@ -1,0 +1,63 @@
+# Traefik v3 Helm Values
+deployment:
+  replicas: 1
+
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+
+# Enable dashboard
+ingressRoute:
+  dashboard:
+    enabled: true
+    matchRule: Host(`traefik.localhost`)
+    entryPoints:
+      - web
+
+ports:
+  web:
+    port: 8000
+    expose:
+      default: true
+    exposedPort: 80
+  websecure:
+    port: 8443
+    expose:
+      default: true
+    exposedPort: 443
+  metrics:
+    port: 9100
+    expose:
+      default: true
+    exposedPort: 9100
+
+# General and access logs in JSON format
+log:
+  level: INFO
+  format: json
+
+accessLog:
+  enabled: true
+  format: json
+
+# Enable Prometheus metrics and ServiceMonitor
+metrics:
+  prometheus:
+    disableAPICheck: true
+    entryPoint: metrics
+    service:
+      enabled: true
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        release: kube-prometheus-stack
+
+# Enable OpenTelemetry tracing to Tempo
+tracing:
+  serviceName: "traefik"
+  otlp:
+    enabled: true
+    grpc:
+      enabled: true
+      endpoint: "tempo.monitoring.svc.cluster.local:4317"
+      insecure: true

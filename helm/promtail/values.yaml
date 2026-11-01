@@ -1,0 +1,6 @@
+# Promtail Helm Values
+config:
+  clients:
+    - url: http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push
+  positions:
+    filename: /run/promtail/positions.yaml
