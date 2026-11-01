@@ -6,15 +6,15 @@ This repository contains declarative configurations and Helm value overrides to 
 
 ## 1. Web Endpoints
 
-All services are accessible locally via `*.localhost` on standard port `80`:
+All services are accessible locally via both HTTP (`http://*.localhost`) and trusted HTTPS (`https://*.localhost`):
 
-| Component | URL | Credentials / Notes |
+| Component | URL (HTTPS) | Notes / Credentials |
 | :--- | :--- | :--- |
-| **Grafana** | [http://grafana.localhost](http://grafana.localhost) | User: `admin` \| Password: `admin` |
-| **Traefik Dashboard** | [http://traefik.localhost/dashboard/](http://traefik.localhost/dashboard/) | Traefik v3 Web UI & Ingress overview |
-| **Prometheus** | [http://prometheus.localhost](http://prometheus.localhost) | Scrapes Traefik, K8s nodes, kubelet, and pods |
-| **Alertmanager** | [http://alertmanager.localhost](http://alertmanager.localhost) | Alerts routing & notification manager |
-| **Demo Application** | [http://demo.localhost](http://demo.localhost) | Sample workload for end-to-end testing |
+| **Grafana** | [https://grafana.localhost](https://grafana.localhost) | User: `admin` \| Password: `admin` |
+| **Traefik Dashboard** | [https://traefik.localhost/dashboard/](https://traefik.localhost/dashboard/) | Traefik v3 Web UI & Ingress overview |
+| **Prometheus** | [https://prometheus.localhost](https://prometheus.localhost) | Scrapes Traefik, K8s nodes, kubelet, and pods |
+| **Alertmanager** | [https://alertmanager.localhost](https://alertmanager.localhost) | Alerts routing & notification manager |
+| **Demo Application** | [https://demo.localhost](https://demo.localhost) | Sample workload for end-to-end testing |
 
 ---
 

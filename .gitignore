@@ -1,8 +1,11 @@
 # Local kubeconfig
 cluster/kubeconfig.yaml
 
+# Local TLS Certificates
+certs/
+*.pem
+
 # OS / Editor temporary files
 .DS_Store
 *.swp
 *.tmp
-

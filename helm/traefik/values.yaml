@@ -6,6 +6,12 @@ ingressClass:
   enabled: true
   isDefaultClass: true
 
+# Configure default TLS certificate for all HTTPS entrypoints
+tlsStore:
+  default:
+    defaultCertificate:
+      secretName: traefik-default-cert
+
 # Enable dashboard
 ingressRoute:
   dashboard:
@@ -13,6 +19,7 @@ ingressRoute:
     matchRule: Host(`traefik.localhost`)
     entryPoints:
       - web
+      - websecure
 
 ports:
   web:
