@@ -61,3 +61,4 @@ spec:
       name: http
   selector:
     app: device-service
+

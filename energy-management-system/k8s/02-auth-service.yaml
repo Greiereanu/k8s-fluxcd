@@ -67,3 +67,4 @@ spec:
       name: http
   selector:
     app: auth-service
+
