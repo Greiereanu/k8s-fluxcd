@@ -2,11 +2,12 @@ import logging
 import os
 
 import httpx
-from backend.common.models import TokenPayload, UserRole
-from backend.common.security import decode_access_token
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+from backend.common.models import TokenPayload, UserRole
+from backend.common.security import decode_access_token
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("api-gateway")
@@ -17,11 +18,10 @@ DEVICE_SERVICE_URL = os.getenv("DEVICE_SERVICE_URL", "http://localhost:8003")
 
 app = FastAPI(
     title="Energy Management - API Gateway & Reverse Proxy",
-    description="Unified Entrypoint with token validation and role-based routing",
+    description="Unified entrypoint with token validation and role-based routing",
     version="1.0.0",
 )
 
-# Enable CORS for future frontend integration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -67,25 +67,20 @@ async def health_check():
 async def gateway_reverse_proxy(path: str, request: Request):
     full_path = f"/{path}"
 
-    # Handle preflight CORS requests immediately
     if request.method == "OPTIONS":
         return Response(status_code=status.HTTP_200_OK)
 
-    # 1. Determine target downstream microservice
     target_base_url = None
     downstream_path = full_path
 
     if full_path.startswith("/api/v1/auth/"):
         target_base_url = AUTH_SERVICE_URL
-        # Map /api/v1/auth/login -> /auth/login
         downstream_path = full_path.replace("/api/v1/auth", "/auth")
     elif full_path.startswith("/api/v1/users"):
         target_base_url = USER_SERVICE_URL
-        # Map /api/v1/users -> /users
         downstream_path = full_path.replace("/api/v1/users", "/users")
     elif full_path.startswith("/api/v1/devices"):
         target_base_url = DEVICE_SERVICE_URL
-        # Map /api/v1/devices -> /devices
         downstream_path = full_path.replace("/api/v1/devices", "/devices")
     else:
         raise HTTPException(
@@ -93,7 +88,6 @@ async def gateway_reverse_proxy(path: str, request: Request):
             detail=f"Route '{full_path}' does not match any registered microservice",
         )
 
-    # 2. Check Authentication & Authorization
     user_payload: TokenPayload | None = None
     is_public = any(full_path.startswith(p) for p in PUBLIC_PATHS)
 
@@ -114,10 +108,7 @@ async def gateway_reverse_proxy(path: str, request: Request):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Apply Gateway-level Role-Based Access Control (RBAC)
-        # Non-admins cannot perform user CRUD or manage/assign devices
         if user_payload.role != UserRole.ADMIN:
-            # Users service: Only /users/me is accessible by Clients
             if downstream_path.startswith("/users") and downstream_path != "/users/me":
                 return JSONResponse(
                     status_code=status.HTTP_403_FORBIDDEN,
@@ -126,7 +117,6 @@ async def gateway_reverse_proxy(path: str, request: Request):
                     },
                 )
 
-            # Devices service: Clients can only access /devices/my-devices and GET /devices/{id}
             if downstream_path.startswith("/devices"):
                 is_client_allowed = downstream_path == "/devices/my-devices" or (
                     request.method == "GET" and downstream_path.startswith("/devices/")
@@ -137,15 +127,11 @@ async def gateway_reverse_proxy(path: str, request: Request):
                         content={"detail": "Admin role required for device management"},
                     )
 
-    # 3. Forward request to downstream microservice
     body = await request.body()
     headers = dict(request.headers)
-
-    # Remove host header to allow target resolution
     headers.pop("host", None)
     headers.pop("content-length", None)
 
-    # Inject authenticated user context headers
     if user_payload:
         headers["X-User-Id"] = str(user_payload.user_id)
         headers["X-User-Name"] = user_payload.username
@@ -163,7 +149,6 @@ async def gateway_reverse_proxy(path: str, request: Request):
                 content=body,
                 headers=headers,
             )
-            # Filter out hop-by-hop headers
             response_headers = {
                 k: v
                 for k, v in resp.headers.items()

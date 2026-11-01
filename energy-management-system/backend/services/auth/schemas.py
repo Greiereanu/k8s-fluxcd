@@ -1,14 +1,15 @@
 import uuid
 
-from backend.common.models import UserRole
 from pydantic import BaseModel, ConfigDict, Field
+
+from backend.common.models import UserRole
 
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6, max_length=100)
     role: UserRole = UserRole.CLIENT
-    user_id: uuid.UUID | None = None  # If passed during coordinated creation
+    user_id: uuid.UUID | None = None
 
 
 class LoginRequest(BaseModel):

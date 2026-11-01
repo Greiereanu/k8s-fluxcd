@@ -2,6 +2,10 @@ import logging
 import uuid
 from contextlib import asynccontextmanager
 
+from fastapi import Depends, FastAPI, HTTPException, status
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.common.auth import require_admin, require_authenticated
 from backend.common.models import CurrentUser, MessageResponse, UserRole
 from backend.services.device.database import Base, engine, get_db
@@ -12,9 +16,6 @@ from backend.services.device.schemas import (
     DeviceResponse,
     DeviceUpdate,
 )
-from fastapi import Depends, FastAPI, HTTPException, status
-from sqlalchemy import select, update
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("device-service")
@@ -102,7 +103,6 @@ async def get_device_by_id(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Device with ID '{device_id}' not found"
         )
 
-    # Check permission: Admin can see any, Client can only see their own device
     if current_user.role != UserRole.ADMIN and device.assigned_user_id != current_user.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

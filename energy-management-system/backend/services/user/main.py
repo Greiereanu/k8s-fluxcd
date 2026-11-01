@@ -4,14 +4,15 @@ import uuid
 from contextlib import asynccontextmanager
 
 import httpx
+from fastapi import Depends, FastAPI, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.common.auth import require_admin, require_authenticated
 from backend.common.models import CurrentUser, MessageResponse, UserRole
 from backend.services.user.database import AsyncSessionLocal, Base, engine, get_db
 from backend.services.user.models import User
 from backend.services.user.schemas import UserCreate, UserResponse, UserUpdate
-from fastapi import Depends, FastAPI, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("user-service")
@@ -19,6 +20,9 @@ logger = logging.getLogger("user-service")
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://localhost:8001")
 DEVICE_SERVICE_URL = os.getenv("DEVICE_SERVICE_URL", "http://localhost:8003")
 ADMIN_DEFAULT_USER = os.getenv("ADMIN_DEFAULT_USER", "admin")
+ADMIN_DEFAULT_USER_ID = uuid.UUID(
+    os.getenv("ADMIN_DEFAULT_USER_ID", "00000000-0000-0000-0000-000000000001")
+)
 
 
 @asynccontextmanager
@@ -27,13 +31,12 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
     logger.info("User service database tables initialized.")
 
-    # Seed admin profile if not exists
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(User).where(User.username == ADMIN_DEFAULT_USER))
         admin = result.scalar_one_or_none()
         if not admin:
             new_admin = User(
-                id=uuid.uuid4(),
+                id=ADMIN_DEFAULT_USER_ID,
                 username=ADMIN_DEFAULT_USER,
                 email="admin@energy.local",
                 full_name="System Administrator",
@@ -42,11 +45,7 @@ async def lifespan(app: FastAPI):
             )
             session.add(new_admin)
             await session.commit()
-            logger.info(
-                "Default admin profile '%s' seeded with UUID: %s",
-                ADMIN_DEFAULT_USER,
-                new_admin.id,
-            )
+            logger.info("Default admin profile seeded: %s", ADMIN_DEFAULT_USER)
     yield
     await engine.dispose()
 
@@ -90,7 +89,6 @@ async def create_user(
 
     user_id = uuid.uuid4()
 
-    # Register credentials in Auth Service
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             auth_resp = await client.post(
@@ -210,14 +208,12 @@ async def delete_user(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"User with ID '{user_id}' not found"
         )
 
-    # 1. Delete credentials from Auth Service
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             await client.delete(f"{AUTH_SERVICE_URL}/auth/credentials/{user_id}")
         except httpx.RequestError as e:
             logger.warning(f"Could not notify auth-service of user deletion: {e}")
 
-        # 2. Unassign user's devices in Device Service
         try:
             await client.post(f"{DEVICE_SERVICE_URL}/devices/unassign-user/{user_id}")
         except httpx.RequestError as e:

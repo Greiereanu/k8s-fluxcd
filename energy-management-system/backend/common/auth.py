@@ -1,9 +1,10 @@
 import uuid
 
-from backend.common.models import CurrentUser, UserRole
-from backend.common.security import decode_access_token
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from backend.common.models import CurrentUser, UserRole
+from backend.common.security import decode_access_token
 
 security = HTTPBearer(auto_error=False)
 
@@ -14,11 +15,6 @@ def get_current_user(
     x_user_role: str | None = Header(None, alias="X-User-Role"),
     auth_header: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> CurrentUser:
-    """
-    Extracts current authenticated user either from Gateway headers (X-User-*)
-    or fallback to parsing Bearer token directly.
-    """
-    # 1. First check Gateway forwarded headers
     if x_user_id and x_user_name and x_user_role:
         try:
             return CurrentUser(
@@ -30,7 +26,6 @@ def get_current_user(
                 detail="Invalid user ID or role in headers",
             ) from e
 
-    # 2. Fallback to direct Bearer token validation
     if auth_header and auth_header.credentials:
         token_payload = decode_access_token(auth_header.credentials)
         if token_payload:

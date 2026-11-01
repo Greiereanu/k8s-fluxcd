@@ -1,7 +1,8 @@
 import uuid
 
-from backend.services.auth.database import Base
 from sqlalchemy import Boolean, Column, DateTime, String, Uuid, func
+
+from backend.services.auth.database import Base
 
 
 class Credential(Base):

@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
 
-from backend.common.models import UserRole
 from pydantic import BaseModel, ConfigDict, Field
+
+from backend.common.models import UserRole
 
 
 class UserCreate(BaseModel):

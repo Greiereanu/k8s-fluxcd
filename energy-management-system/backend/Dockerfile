@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy common library and microservices
 COPY . /app/backend/
 
 ENV PYTHONPATH=/app

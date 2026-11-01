@@ -20,18 +20,32 @@ All IDs (`user_id`, `device_id`, `id`) are strictly generated and stored as **UU
 
 ---
 
-## 2. Interactive Swagger / OpenAPI Documentation
+## 2. Kubernetes Deployment (k3d / Traefik Ingress)
 
-Once the containers are running, you can explore and test the interactive OpenAPI documentation for each service:
+The system is deployed to the local Kubernetes cluster inside the `ems` namespace, fronted by Traefik Ingress.
 
-- **API Gateway**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Auth Service**: [http://localhost:8001/docs](http://localhost:8001/docs)
-- **User Service**: [http://localhost:8002/docs](http://localhost:8002/docs)
-- **Device Service**: [http://localhost:8003/docs](http://localhost:8003/docs)
+### Apply Manifests
+
+```bash
+kubectl apply -f energy-management-system/k8s/
+```
+
+### Endpoints (via Traefik Ingress)
+
+- **HTTPS (Trusted Wildcard TLS)**: [https://ems.localhost](https://ems.localhost)
+- **HTTP**: [http://ems.localhost](http://ems.localhost)
+- **Gateway Health Check**: [https://ems.localhost/health](https://ems.localhost/health)
+- **Swagger / OpenAPI Documentation**: [https://ems.localhost/docs](https://ems.localhost/docs)
+
+### Verification
+
+```bash
+kubectl get pods,services,ingress -n ems
+```
 
 ---
 
-## 3. Quick Start with Docker Compose
+## 3. Alternative Local Run (Docker Compose)
 
 ```bash
 cd energy-management-system
@@ -49,12 +63,11 @@ docker compose ps
 
 ---
 
-## 4. Running Code Quality & Linting
+## 4. Code Quality & Linting
 
-Code formatting and linting are strictly enforced with **Ruff**:
+Code formatting and linting are enforced with **Ruff**:
 
 ```bash
-# Run format & lint check
 ruff format energy-management-system/
 ruff check --fix energy-management-system/
 ```
@@ -63,7 +76,15 @@ ruff check --fix energy-management-system/
 
 ## 5. End-to-End Automated Testing
 
-A complete integration suite testing authentication, authorization, role isolation, device assignment, and cascade deletion is included:
+An automated integration suite testing authentication, authorization, role isolation, device assignment, and cascade deletion is included.
+
+### Test against Kubernetes Cluster (Traefik Ingress):
+
+```bash
+docker run --rm --net=host -e GATEWAY_URL="https://ems.localhost" -v $(pwd)/energy-management-system/tests:/tests ems-backend:v1 python3 /tests/test_backend.py
+```
+
+### Test against Docker Compose Gateway:
 
 ```bash
 docker exec -i ems-api-gateway python3 < energy-management-system/tests/test_backend.py

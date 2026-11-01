@@ -3,6 +3,10 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 
+from fastapi import Depends, FastAPI, HTTPException, status
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.common.models import MessageResponse, TokenResponse, UserRole
 from backend.common.security import (
     create_access_token,
@@ -19,25 +23,23 @@ from backend.services.auth.schemas import (
     TokenVerifyRequest,
     TokenVerifyResponse,
 )
-from fastapi import Depends, FastAPI, HTTPException, status
-from sqlalchemy import delete, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("auth-service")
 
 ADMIN_DEFAULT_USER = os.getenv("ADMIN_DEFAULT_USER", "admin")
 ADMIN_DEFAULT_PASS = os.getenv("ADMIN_DEFAULT_PASS", "Admin123!")
+ADMIN_DEFAULT_USER_ID = uuid.UUID(
+    os.getenv("ADMIN_DEFAULT_USER_ID", "00000000-0000-0000-0000-000000000001")
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Auth service database tables initialized.")
 
-    # Seed default admin user if not exists
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(Credential).where(Credential.username == ADMIN_DEFAULT_USER)
@@ -46,7 +48,7 @@ async def lifespan(app: FastAPI):
         if not admin:
             new_admin = Credential(
                 id=uuid.uuid4(),
-                user_id=uuid.uuid4(),
+                user_id=ADMIN_DEFAULT_USER_ID,
                 username=ADMIN_DEFAULT_USER,
                 password_hash=hash_password(ADMIN_DEFAULT_PASS),
                 role=UserRole.ADMIN.value,
@@ -54,11 +56,7 @@ async def lifespan(app: FastAPI):
             )
             session.add(new_admin)
             await session.commit()
-            logger.info(
-                "Default admin user '%s' created with UUID: %s",
-                ADMIN_DEFAULT_USER,
-                new_admin.user_id,
-            )
+            logger.info("Default admin user created: %s", ADMIN_DEFAULT_USER)
     yield
     await engine.dispose()
 
@@ -83,7 +81,6 @@ async def health_check():
     tags=["Auth"],
 )
 async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    # Check if username already exists
     stmt = select(Credential).where(Credential.username == req.username)
     result = await db.execute(stmt)
     existing = result.scalar_one_or_none()

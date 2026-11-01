@@ -1,7 +1,8 @@
 import uuid
 
-from backend.services.user.database import Base
 from sqlalchemy import Column, DateTime, String, Uuid, func
+
+from backend.services.user.database import Base
 
 
 class User(Base):
