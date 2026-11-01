@@ -237,4 +237,3 @@ async def unassign_all_for_user(user_id: uuid.UUID, db: AsyncSession = Depends(g
     result = await db.execute(stmt)
     await db.commit()
     return MessageResponse(message=f"Unassigned {result.rowcount} devices for user '{user_id}'")
-

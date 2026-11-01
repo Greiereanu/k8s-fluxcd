@@ -180,9 +180,7 @@ def test_full_pipeline():
         )
 
         # 13. Security check: Internal endpoints cannot be accessed through API Gateway
-        print(
-            "\n[Step 13] Security Check: Client attempts to access internal device endpoint through Gateway..."
-        )
+        print("\n[Step 13] Security Check: Client accesses internal device endpoint...")
         r = client.get("/api/v1/devices/internal", headers=client_headers)
         assert r.status_code == 403, f"Expected 403 Forbidden, got {r.status_code}"
         print("Internal endpoint blocked successfully through API Gateway (403 Forbidden)")

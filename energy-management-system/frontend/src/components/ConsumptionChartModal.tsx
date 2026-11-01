@@ -199,3 +199,4 @@ export const ConsumptionChartModal: React.FC<ConsumptionChartModalProps> = ({ de
     </div>
   );
 };
+
