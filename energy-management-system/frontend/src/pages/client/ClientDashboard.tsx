@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { devicesApi } from "../../api/client";
 import { Device } from "../../types";
-import { Zap, Cpu, MapPin, AlertCircle, RefreshCw } from "lucide-react";
+import { Zap, Cpu, MapPin, AlertCircle, RefreshCw, BarChart2 } from "lucide-react";
+import { ConsumptionChartModal } from "../../components/ConsumptionChartModal";
 
 export const ClientDashboard: React.FC = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDeviceForChart, setSelectedDeviceForChart] = useState<Device | null>(null);
 
   const fetchMyDevices = async () => {
     try {
@@ -140,15 +142,24 @@ export const ClientDashboard: React.FC = () => {
                   </span>
                 </div>
 
-                <div className="text-right">
-                  <span className="text-xs text-slate-400 block font-mono">
-                    ID: {device.id.substring(0, 8)}...
-                  </span>
-                </div>
+                <button
+                  onClick={() => setSelectedDeviceForChart(device)}
+                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold text-xs rounded-lg transition-colors"
+                >
+                  <BarChart2 className="w-4 h-4" />
+                  <span>Consumption</span>
+                </button>
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {selectedDeviceForChart && (
+        <ConsumptionChartModal
+          device={selectedDeviceForChart}
+          onClose={() => setSelectedDeviceForChart(null)}
+        />
       )}
     </div>
   );

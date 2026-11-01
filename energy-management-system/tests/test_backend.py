@@ -169,8 +169,26 @@ def test_full_pipeline():
         assert r.json()["max_consumption"] == 5.0
         print("Device 1 max_consumption updated to 5.0 kWh")
 
-        # 12. Admin deletes User and verifies unassignment
-        print(f"\n[Step 12] Admin deleting Client user {client_user_id}...")
+        # 12. Monitoring service hourly history API test
+        print(f"\n[Step 12] Fetching hourly consumption history for Device 1 ({dev1_id})...")
+        r = client.get(f"/api/v1/monitoring/devices/{dev1_id}/hourly", headers=client_headers)
+        assert r.status_code == 200, f"Failed to fetch hourly monitoring: {r.text}"
+        history = r.json()
+        assert history["device_id"] == dev1_id
+        print(
+            f"Monitoring history retrieved successfully. Records count: {len(history['records'])}"
+        )
+
+        # 13. Security check: Internal endpoints cannot be accessed through API Gateway
+        print(
+            "\n[Step 13] Security Check: Client attempts to access internal device endpoint through Gateway..."
+        )
+        r = client.get("/api/v1/devices/internal", headers=client_headers)
+        assert r.status_code == 403, f"Expected 403 Forbidden, got {r.status_code}"
+        print("Internal endpoint blocked successfully through API Gateway (403 Forbidden)")
+
+        # 14. Admin deletes User and verifies unassignment
+        print(f"\n[Step 14] Admin deleting Client user {client_user_id}...")
         r = client.delete(f"/api/v1/users/{client_user_id}", headers=admin_headers)
         assert r.status_code == 200, f"Failed to delete user: {r.text}"
         print(f"User deleted: {r.json()['message']}")

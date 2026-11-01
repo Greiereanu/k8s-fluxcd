@@ -88,6 +88,27 @@ async def get_my_devices(
     return result.scalars().all()
 
 
+@app.get("/devices/internal", response_model=list[DeviceResponse], tags=["Internal"])
+async def list_active_devices_internal(db: AsyncSession = Depends(get_db)):
+    """Internal: return active devices for simulator discovery without requiring admin token."""
+    stmt = select(Device).where(Device.status == "ACTIVE").order_by(Device.created_at.asc())
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@app.get("/devices/internal/{device_id}", response_model=DeviceResponse, tags=["Internal"])
+async def get_device_internal(device_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Internal: return device details for monitoring threshold evaluation."""
+    stmt = select(Device).where(Device.id == device_id)
+    result = await db.execute(stmt)
+    device = result.scalar_one_or_none()
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Device with ID '{device_id}' not found"
+        )
+    return device
+
+
 @app.get("/devices/{device_id}", response_model=DeviceResponse, tags=["Devices"])
 async def get_device_by_id(
     device_id: uuid.UUID,
@@ -216,3 +237,4 @@ async def unassign_all_for_user(user_id: uuid.UUID, db: AsyncSession = Depends(g
     result = await db.execute(stmt)
     await db.commit()
     return MessageResponse(message=f"Unassigned {result.rowcount} devices for user '{user_id}'")
+

@@ -1,4 +1,4 @@
-import { AuthResponse, Device, User } from "../types";
+import { AuthResponse, Device, DeviceHourlyHistoryResponse, User } from "../types";
 
 const API_BASE = "";
 
@@ -128,4 +128,14 @@ export const devicesApi = {
       method: "POST",
     }),
 };
+
+export const monitoringApi = {
+  getHourlyHistory: (deviceId: string, date?: string) => {
+    const query = date ? `?date=${encodeURIComponent(date)}` : "";
+    return request<DeviceHourlyHistoryResponse>(
+      `/api/v1/monitoring/devices/${deviceId}/hourly${query}`
+    );
+  },
+};
+
 

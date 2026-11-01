@@ -1,7 +1,9 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AlertsProvider } from "./context/AlertsContext";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
+import { AlertToast } from "./components/AlertToast";
 import { Navbar } from "./components/Navbar";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -34,6 +36,7 @@ const ProtectedRoute: React.FC<{
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <ImpersonationBanner />
+      <AlertToast />
       <Navbar />
       <main className="flex-1">{children}</main>
     </div>
@@ -51,43 +54,45 @@ const RootRedirect: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+      <AlertsProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* Admin Routes */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedRoute allowedRole="ADMIN">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
+            {/* Admin Routes */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute allowedRole="ADMIN">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Client Routes */}
-          <Route
-            path="/client/dashboard"
-            element={
-              <ProtectedRoute allowedRole="CLIENT">
-                <ClientDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/client/profile"
-            element={
-              <ProtectedRoute allowedRole="CLIENT">
-                <ProfileView />
-              </ProtectedRoute>
-            }
-          />
+            {/* Client Routes */}
+            <Route
+              path="/client/dashboard"
+              element={
+                <ProtectedRoute allowedRole="CLIENT">
+                  <ClientDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/client/profile"
+              element={
+                <ProtectedRoute allowedRole="CLIENT">
+                  <ProfileView />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AlertsProvider>
     </AuthProvider>
   );
 };

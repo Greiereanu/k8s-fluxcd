@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor-simulator
+  namespace: ems
+  labels:
+    app: sensor-simulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sensor-simulator
+  template:
+    metadata:
+      labels:
+        app: sensor-simulator
+    spec:
+      containers:
+        - name: sensor-simulator
+          image: ems-simulator:v1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RABBITMQ_URL
+              value: "amqp://guest:guest@rabbitmq:5672/"
+            - name: DEVICE_SERVICE_URL
+              value: "http://device-service:8003"
+            - name: SIMULATION_INTERVAL_SECONDS
+              value: "3.0"
+            - name: ENABLE_SPIKES
+              value: "true"
+            - name: SPIKE_EVERY
+              value: "8"

@@ -33,6 +33,8 @@ spec:
               value: "http://user-service:8002"
             - name: DEVICE_SERVICE_URL
               value: "http://device-service:8003"
+            - name: MONITORING_SERVICE_URL
+              value: "http://monitoring-service:8004"
             - name: JWT_SECRET_KEY
               value: "super-secret-energy-management-system-key-2026"
           ports:

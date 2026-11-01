@@ -18,6 +18,13 @@ spec:
                 name: api-gateway
                 port:
                   number: 8000
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: monitoring-service
+                port:
+                  number: 8004
           - path: /health
             pathType: Prefix
             backend:
@@ -56,6 +63,13 @@ spec:
                 name: api-gateway
                 port:
                   number: 8000
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: monitoring-service
+                port:
+                  number: 8004
           - path: /health
             pathType: Prefix
             backend:

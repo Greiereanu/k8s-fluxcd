@@ -6,6 +6,7 @@ import { User, Device } from "../../types";
 import { UserModal } from "./UserModal";
 import { DeviceModal } from "./DeviceModal";
 import { AssignDeviceModal } from "./AssignDeviceModal";
+import { ConsumptionChartModal } from "../../components/ConsumptionChartModal";
 import {
   Users,
   Cpu,
@@ -19,6 +20,7 @@ import {
   Activity,
   AlertCircle,
   Eye,
+  BarChart2,
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
@@ -39,6 +41,7 @@ export const AdminDashboard: React.FC = () => {
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [deviceToAssign, setDeviceToAssign] = useState<Device | null>(null);
+  const [selectedDeviceForChart, setSelectedDeviceForChart] = useState<Device | null>(null);
 
   const fetchData = async () => {
     try {
@@ -441,6 +444,13 @@ export const AdminDashboard: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="inline-flex space-x-1.5">
                             <button
+                              onClick={() => setSelectedDeviceForChart(d)}
+                              className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View Hourly Consumption Chart"
+                            >
+                              <BarChart2 className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => {
                                 setDeviceToAssign(d);
                                 setAssignModalOpen(true);
@@ -509,6 +519,13 @@ export const AdminDashboard: React.FC = () => {
         device={deviceToAssign}
         users={users}
       />
+
+      {selectedDeviceForChart && (
+        <ConsumptionChartModal
+          device={selectedDeviceForChart}
+          onClose={() => setSelectedDeviceForChart(null)}
+        />
+      )}
     </div>
   );
 };
