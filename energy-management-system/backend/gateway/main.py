@@ -19,6 +19,7 @@ AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://localhost:8001")
 USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://localhost:8002")
 DEVICE_SERVICE_URL = os.getenv("DEVICE_SERVICE_URL", "http://localhost:8003")
 MONITORING_SERVICE_URL = os.getenv("MONITORING_SERVICE_URL", "http://localhost:8004")
+CHAT_SERVICE_URL = os.getenv("CHAT_SERVICE_URL", "http://localhost:8005")
 
 app = FastAPI(
     title="Energy Management - API Gateway & Reverse Proxy",
@@ -64,6 +65,7 @@ async def health_check():
             "user_service": USER_SERVICE_URL,
             "device_service": DEVICE_SERVICE_URL,
             "monitoring_service": MONITORING_SERVICE_URL,
+            "chat_service": CHAT_SERVICE_URL,
         },
     }
 
@@ -96,7 +98,43 @@ async def websocket_gateway_proxy(client_ws: WebSocket):
             for task in pending:
                 task.cancel()
     except Exception as e:
-        logger.warning("Gateway WebSocket proxy closed: %s", e)
+        logger.warning("Gateway WebSocket alerts proxy closed: %s", e)
+    finally:
+        with contextlib.suppress(Exception):
+            await client_ws.close()
+
+
+@app.websocket("/ws/chat")
+async def websocket_chat_gateway_proxy(client_ws: WebSocket):
+    await client_ws.accept()
+    query = client_ws.url.query
+    ws_target = (
+        f"{CHAT_SERVICE_URL.replace('http://', 'ws://').replace('https://', 'wss://')}/ws/chat"
+    )
+    if query:
+        ws_target = f"{ws_target}?{query}"
+
+    try:
+        async with websockets.connect(ws_target) as upstream_ws:
+
+            async def forward_to_client():
+                async for msg in upstream_ws:
+                    await client_ws.send_text(msg)
+
+            async def forward_to_upstream():
+                while True:
+                    text = await client_ws.receive_text()
+                    await upstream_ws.send(text)
+
+            tasks = [
+                asyncio.create_task(forward_to_client()),
+                asyncio.create_task(forward_to_upstream()),
+            ]
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            for task in pending:
+                task.cancel()
+    except Exception as e:
+        logger.warning("Gateway WebSocket chat proxy closed: %s", e)
     finally:
         with contextlib.suppress(Exception):
             await client_ws.close()
@@ -124,6 +162,9 @@ async def gateway_reverse_proxy(path: str, request: Request):
     elif full_path.startswith("/api/v1/monitoring"):
         target_base_url = MONITORING_SERVICE_URL
         downstream_path = full_path.replace("/api/v1/monitoring", "/monitoring")
+    elif full_path.startswith("/api/v1/chat"):
+        target_base_url = CHAT_SERVICE_URL
+        downstream_path = full_path.replace("/api/v1/chat", "/chat")
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -220,4 +261,3 @@ async def gateway_reverse_proxy(path: str, request: Request):
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 content={"detail": f"Downstream microservice unreachable: {exc!s}"},
             )
-

@@ -35,6 +35,8 @@ spec:
               value: "http://device-service:8003"
             - name: MONITORING_SERVICE_URL
               value: "http://monitoring-service:8004"
+            - name: CHAT_SERVICE_URL
+              value: "http://chat-service:8005"
             - name: JWT_SECRET_KEY
               value: "super-secret-energy-management-system-key-2026"
           ports:

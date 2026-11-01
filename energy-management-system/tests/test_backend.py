@@ -185,8 +185,52 @@ def test_full_pipeline():
         assert r.status_code == 403, f"Expected 403 Forbidden, got {r.status_code}"
         print("Internal endpoint blocked successfully through API Gateway (403 Forbidden)")
 
-        # 14. Admin deletes User and verifies unassignment
-        print(f"\n[Step 14] Admin deleting Client user {client_user_id}...")
+        # 14. Chat service API test
+        print("\n[Step 14] Testing Chat Service endpoints...")
+        r = client.get("/api/v1/chat/sessions/me", headers=client_headers)
+        assert r.status_code == 200, f"Failed to get client chat session: {r.text}"
+        chat_session = r.json()
+        session_id = chat_session["id"]
+        assert chat_session["client_user_id"] == client_user_id
+        print(f"Client chat session active: {session_id}")
+
+        # Client sends a message
+        r = client.post(
+            f"/api/v1/chat/sessions/{session_id}/messages",
+            headers=client_headers,
+            json={"content": "Hello support! This is a test message."},
+        )
+        assert r.status_code == 201, f"Failed to post message: {r.text}"
+        msg = r.json()
+        assert msg["content"] == "Hello support! This is a test message."
+        assert msg["sender_role"] == "CLIENT"
+        print("Client successfully posted message to support")
+
+        # Admin lists sessions
+        r = client.get("/api/v1/chat/sessions", headers=admin_headers)
+        assert r.status_code == 200, f"Failed to list admin chat sessions: {r.text}"
+        sessions = r.json()
+        assert any(s["id"] == session_id for s in sessions)
+        print(f"Admin retrieved chat sessions list ({len(sessions)} active sessions)")
+
+        # Admin replies to client
+        r = client.post(
+            f"/api/v1/chat/sessions/{session_id}/messages",
+            headers=admin_headers,
+            json={"content": "Hello client! We received your message."},
+        )
+        assert r.status_code == 201, f"Admin reply failed: {r.text}"
+        admin_msg = r.json()
+        assert admin_msg["sender_role"] == "ADMIN"
+        print("Admin successfully replied to client")
+
+        # Client marks session as read
+        r = client.post(f"/api/v1/chat/sessions/{session_id}/read", headers=client_headers)
+        assert r.status_code == 200, f"Client mark-as-read failed: {r.text}"
+        print("Client marked session messages as read")
+
+        # 15. Admin deletes User and verifies unassignment
+        print(f"\n[Step 15] Admin deleting Client user {client_user_id}...")
         r = client.delete(f"/api/v1/users/{client_user_id}", headers=admin_headers)
         assert r.status_code == 200, f"Failed to delete user: {r.text}"
         print(f"User deleted: {r.json()['message']}")

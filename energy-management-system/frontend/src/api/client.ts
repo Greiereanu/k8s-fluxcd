@@ -1,4 +1,12 @@
-import { AuthResponse, Device, DeviceHourlyHistoryResponse, User } from "../types";
+import {
+  AuthResponse,
+  ChatMessage,
+  ChatSessionDetail,
+  ChatSessionSummary,
+  Device,
+  DeviceHourlyHistoryResponse,
+  User,
+} from "../types";
 
 const API_BASE = "";
 
@@ -137,5 +145,17 @@ export const monitoringApi = {
     );
   },
 };
+
+export const chatApi = {
+  getSessions: () => request<ChatSessionSummary[]>("/api/v1/chat/sessions"),
+  getMySession: () => request<ChatSessionDetail>("/api/v1/chat/sessions/me"),
+  getSessionMessages: (sessionId: string) =>
+    request<ChatMessage[]>(`/api/v1/chat/sessions/${sessionId}/messages`),
+  markSessionRead: (sessionId: string) =>
+    request<{ message: string }>(`/api/v1/chat/sessions/${sessionId}/read`, {
+      method: "POST",
+    }),
+};
+
 
 

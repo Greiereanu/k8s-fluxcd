@@ -7,6 +7,7 @@ import { UserModal } from "./UserModal";
 import { DeviceModal } from "./DeviceModal";
 import { AssignDeviceModal } from "./AssignDeviceModal";
 import { ConsumptionChartModal } from "../../components/ConsumptionChartModal";
+import { AdminChatCenter } from "../../components/chat/AdminChatCenter";
 import {
   Users,
   Cpu,
@@ -28,7 +29,7 @@ export const AdminDashboard: React.FC = () => {
   const { impersonate } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
-  const [activeTab, setActiveTab] = useState<"users" | "devices">("users");
+  const [activeTab, setActiveTab] = useState<"users" | "devices" | "chat">("users");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -233,45 +234,62 @@ export const AdminDashboard: React.FC = () => {
             >
               Device Management ({devices.length})
             </button>
+            <button
+              onClick={() => {
+                setActiveTab("chat");
+                setSearchQuery("");
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "chat"
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Support Chat
+            </button>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-              <input
-                type="text"
-                placeholder={activeTab === "users" ? "Search users..." : "Search devices..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 sm:w-64"
-              />
+          {activeTab !== "chat" && (
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder={activeTab === "users" ? "Search users..." : "Search devices..."}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 sm:w-64"
+                />
+              </div>
+
+              {activeTab === "users" ? (
+                <button
+                  onClick={() => {
+                    setUserToEdit(null);
+                    setUserModalOpen(true);
+                  }}
+                  className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add User</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setDeviceToEdit(null);
+                    setDeviceModalOpen(true);
+                  }}
+                  className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Register Device</span>
+                </button>
+              )}
             </div>
-
-            {activeTab === "users" ? (
-              <button
-                onClick={() => {
-                  setUserToEdit(null);
-                  setUserModalOpen(true);
-                }}
-                className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add User</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setDeviceToEdit(null);
-                  setDeviceModalOpen(true);
-                }}
-                className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-sm font-medium shadow-sm transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Register Device</span>
-              </button>
-            )}
-          </div>
+          )}
         </div>
+
+        {activeTab === "chat" && <AdminChatCenter />}
 
         {/* Tab 1: Users Table */}
         {activeTab === "users" && (

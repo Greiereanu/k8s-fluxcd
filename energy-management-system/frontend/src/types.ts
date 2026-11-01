@@ -58,4 +58,35 @@ export interface AlertNotification {
   message: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  session_id: string;
+  sender_id: string;
+  sender_username: string;
+  sender_role: "CLIENT" | "ADMIN";
+  content: string;
+  is_read: boolean;
+  timestamp: string;
+}
+
+export interface ChatSessionSummary {
+  id: string;
+  client_user_id: string;
+  client_username: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  last_message: ChatMessage | null;
+  unread_count: number;
+}
+
+export interface ChatSessionDetail {
+  id: string;
+  client_user_id: string;
+  client_username: string;
+  is_active: boolean;
+  messages: ChatMessage[];
+}
+
+
 

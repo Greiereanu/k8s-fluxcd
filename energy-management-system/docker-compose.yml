@@ -143,6 +143,25 @@ services:
     networks:
       - ems-network
 
+  chat-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ems-chat-service
+    command: uvicorn backend.services.chat.main:app --host 0.0.0.0 --port 8005 --reload
+    volumes:
+      - ./backend:/app/backend
+    environment:
+      - CHAT_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/chat_db
+      - JWT_SECRET_KEY=super-secret-energy-management-system-key-2026
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ems-network
+
   api-gateway:
     build:
       context: ./backend
@@ -156,6 +175,7 @@ services:
       - USER_SERVICE_URL=http://user-service:8002
       - DEVICE_SERVICE_URL=http://device-service:8003
       - MONITORING_SERVICE_URL=http://monitoring-service:8004
+      - CHAT_SERVICE_URL=http://chat-service:8005
       - JWT_SECRET_KEY=super-secret-energy-management-system-key-2026
     ports:
       - "8000:8000"
@@ -164,6 +184,7 @@ services:
       - user-service
       - device-service
       - monitoring-service
+      - chat-service
     networks:
       - ems-network
 

@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AlertsProvider } from "./context/AlertsContext";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { AlertToast } from "./components/AlertToast";
+import { ClientChatWidget } from "./components/chat/ClientChatWidget";
 import { Navbar } from "./components/Navbar";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -37,6 +38,7 @@ const ProtectedRoute: React.FC<{
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <ImpersonationBanner />
       <AlertToast />
+      <ClientChatWidget />
       <Navbar />
       <main className="flex-1">{children}</main>
     </div>
