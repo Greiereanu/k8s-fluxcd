@@ -178,6 +178,42 @@ async def get_my_profile(
     return user
 
 
+@app.put("/users/me", response_model=UserResponse, tags=["Users"])
+async def update_my_profile(
+    req: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_authenticated),
+):
+    """Authenticated user: update own email, full_name, and address."""
+    stmt = select(User).where(
+        (User.id == current_user.user_id) | (User.username == current_user.username)
+    )
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User profile not found")
+
+    if req.email is not None:
+        user.email = req.email
+    if req.full_name is not None:
+        user.full_name = req.full_name
+    if req.address is not None:
+        user.address = req.address
+    if req.password:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                await client.put(
+                    f"{AUTH_SERVICE_URL}/auth/credentials/{user.id}",
+                    json={"password": req.password},
+                )
+            except httpx.RequestError as exc:
+                logger.warning("Could not sync password update to auth-service: %s", exc)
+
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
 @app.get("/users/{user_id}", response_model=UserResponse, tags=["Users"])
 async def get_user_by_id(
     user_id: uuid.UUID,
@@ -224,6 +260,18 @@ async def update_user(
         user.address = req.address
     if req.role is not None:
         user.role = req.role.value
+
+    if req.password or req.role:
+        payload = {}
+        if req.password:
+            payload["password"] = req.password
+        if req.role:
+            payload["role"] = req.role.value
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                await client.put(f"{AUTH_SERVICE_URL}/auth/credentials/{user_id}", json=payload)
+            except httpx.RequestError as exc:
+                logger.warning("Could not sync credentials update to auth-service: %s", exc)
 
     await db.commit()
     await db.refresh(user)

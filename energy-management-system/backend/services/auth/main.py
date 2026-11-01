@@ -19,6 +19,7 @@ from backend.services.auth.database import AsyncSessionLocal, Base, engine, get_
 from backend.services.auth.models import Credential
 from backend.services.auth.schemas import (
     CredentialResponse,
+    CredentialUpdate,
     LoginRequest,
     RegisterRequest,
     TokenVerifyRequest,
@@ -114,6 +115,9 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
                         "id": str(user_id),
                         "username": req.username,
                         "role": req.role.value,
+                        "email": req.email,
+                        "full_name": req.full_name,
+                        "address": req.address,
                     },
                 )
             except httpx.RequestError as exc:
@@ -179,6 +183,33 @@ async def verify_token(req: TokenVerifyRequest):
 async def list_credentials(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Credential))
     return result.scalars().all()
+
+
+@app.put(
+    "/auth/credentials/{user_id}", response_model=CredentialResponse, tags=["Internal"]
+)
+async def update_credential(
+    user_id: uuid.UUID,
+    req: CredentialUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(Credential).where(Credential.user_id == user_id)
+    result = await db.execute(stmt)
+    cred = result.scalar_one_or_none()
+    if not cred:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Credential for user_id '{user_id}' not found",
+        )
+    if req.password:
+        cred.password_hash = hash_password(req.password)
+    if req.role:
+        cred.role = req.role.value
+    if req.is_active is not None:
+        cred.is_active = req.is_active
+    await db.commit()
+    await db.refresh(cred)
+    return cred
 
 
 @app.delete("/auth/credentials/{user_id}", response_model=MessageResponse, tags=["Internal"])

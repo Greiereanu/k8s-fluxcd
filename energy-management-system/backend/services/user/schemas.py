@@ -29,6 +29,7 @@ class UserUpdate(BaseModel):
     full_name: str | None = None
     address: str | None = None
     role: UserRole | None = None
+    password: str | None = Field(None, min_length=6, max_length=100)
 
 
 class UserResponse(BaseModel):

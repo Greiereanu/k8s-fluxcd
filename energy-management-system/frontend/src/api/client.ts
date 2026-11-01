@@ -56,7 +56,14 @@ export const authApi = {
       body: JSON.stringify(data),
     }),
 
-  register: (data: { username: string; password: string; role?: string }) =>
+  register: (data: {
+    username: string;
+    password: string;
+    role?: string;
+    email?: string;
+    full_name?: string;
+    address?: string;
+  }) =>
     request<AuthResponse>("/api/v1/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
@@ -66,13 +73,18 @@ export const authApi = {
 export const usersApi = {
   getAll: () => request<User[]>("/api/v1/users"),
   getMe: () => request<User>("/api/v1/users/me"),
+  updateMe: (data: Partial<User> & { password?: string }) =>
+    request<User>("/api/v1/users/me", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
   getById: (id: string) => request<User>(`/api/v1/users/${id}`),
   create: (data: Partial<User> & { password: string }) =>
     request<User>("/api/v1/users", {
       method: "POST",
       body: JSON.stringify(data),
     }),
-  update: (id: string, data: Partial<User>) =>
+  update: (id: string, data: Partial<User> & { password?: string }) =>
     request<User>(`/api/v1/users/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
