@@ -1,0 +1,112 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ems-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - ems-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ems-network
+
+  auth-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ems-auth-service
+    command: uvicorn backend.services.auth.main:app --host 0.0.0.0 --port 8001 --reload
+    volumes:
+      - ./backend:/app/backend
+    environment:
+      - AUTH_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/auth_db
+      - JWT_SECRET_KEY=super-secret-energy-management-system-key-2026
+      - ADMIN_DEFAULT_USER=admin
+      - ADMIN_DEFAULT_PASS=Admin123!
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ems-network
+
+  user-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ems-user-service
+    command: uvicorn backend.services.user.main:app --host 0.0.0.0 --port 8002 --reload
+    volumes:
+      - ./backend:/app/backend
+    environment:
+      - USER_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/user_db
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - DEVICE_SERVICE_URL=http://device-service:8003
+      - JWT_SECRET_KEY=super-secret-energy-management-system-key-2026
+      - ADMIN_DEFAULT_USER=admin
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - ems-network
+
+  device-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ems-device-service
+    command: uvicorn backend.services.device.main:app --host 0.0.0.0 --port 8003 --reload
+    volumes:
+      - ./backend:/app/backend
+    environment:
+      - DEVICE_DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/device_db
+      - JWT_SECRET_KEY=super-secret-energy-management-system-key-2026
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ems-network
+
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ems-api-gateway
+    command: uvicorn backend.gateway.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app/backend
+    environment:
+      - AUTH_SERVICE_URL=http://auth-service:8001
+      - USER_SERVICE_URL=http://user-service:8002
+      - DEVICE_SERVICE_URL=http://device-service:8003
+      - JWT_SECRET_KEY=super-secret-energy-management-system-key-2026
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - user-service
+      - device-service
+    networks:
+      - ems-network
+
+volumes:
+  ems-pgdata:
+
+networks:
+  ems-network:
+    driver: bridge
