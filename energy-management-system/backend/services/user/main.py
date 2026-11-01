@@ -12,7 +12,7 @@ from backend.common.auth import require_admin, require_authenticated
 from backend.common.models import CurrentUser, MessageResponse, UserRole
 from backend.services.user.database import AsyncSessionLocal, Base, engine, get_db
 from backend.services.user.models import User
-from backend.services.user.schemas import UserCreate, UserResponse, UserUpdate
+from backend.services.user.schemas import UserCreate, UserInternalCreate, UserResponse, UserUpdate
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("user-service")
@@ -126,6 +126,36 @@ async def create_user(
     return new_user
 
 
+@app.post(
+    "/users/internal",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Internal"],
+)
+async def create_internal_user_profile(
+    req: UserInternalCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    stmt = select(User).where((User.id == req.id) | (User.username == req.username))
+    result = await db.execute(stmt)
+    existing = result.scalar_one_or_none()
+    if existing:
+        return existing
+
+    new_user = User(
+        id=req.id,
+        username=req.username,
+        email=req.email,
+        full_name=req.full_name,
+        address=req.address,
+        role=req.role.value,
+    )
+    db.add(new_user)
+    await db.commit()
+    await db.refresh(new_user)
+    return new_user
+
+
 @app.get("/users/me", response_model=UserResponse, tags=["Users"])
 async def get_my_profile(
     db: AsyncSession = Depends(get_db), current_user: CurrentUser = Depends(require_authenticated)
@@ -137,7 +167,14 @@ async def get_my_profile(
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User profile not found")
+        user = User(
+            id=current_user.user_id,
+            username=current_user.username,
+            role=current_user.role.value,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
     return user
 
 

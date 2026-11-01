@@ -3,6 +3,7 @@ import os
 import uuid
 from contextlib import asynccontextmanager
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,6 +33,7 @@ ADMIN_DEFAULT_PASS = os.getenv("ADMIN_DEFAULT_PASS", "Admin123!")
 ADMIN_DEFAULT_USER_ID = uuid.UUID(
     os.getenv("ADMIN_DEFAULT_USER_ID", "00000000-0000-0000-0000-000000000001")
 )
+USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://localhost:8002")
 
 
 @asynccontextmanager
@@ -102,6 +104,20 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     db.add(new_cred)
     await db.commit()
     await db.refresh(new_cred)
+
+    if req.user_id is None:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                await client.post(
+                    f"{USER_SERVICE_URL}/users/internal",
+                    json={
+                        "id": str(user_id),
+                        "username": req.username,
+                        "role": req.role.value,
+                    },
+                )
+            except httpx.RequestError as exc:
+                logger.warning("Could not notify user-service of new registration: %s", exc)
 
     access_token = create_access_token(
         user_id=new_cred.user_id, username=new_cred.username, role=UserRole(new_cred.role)

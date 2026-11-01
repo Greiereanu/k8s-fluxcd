@@ -15,6 +15,15 @@ class UserCreate(BaseModel):
     role: UserRole = UserRole.CLIENT
 
 
+class UserInternalCreate(BaseModel):
+    id: uuid.UUID
+    username: str
+    role: UserRole = UserRole.CLIENT
+    email: str | None = None
+    full_name: str | None = None
+    address: str | None = None
+
+
 class UserUpdate(BaseModel):
     email: str | None = None
     full_name: str | None = None

@@ -37,6 +37,8 @@ spec:
               value: "Admin123!"
             - name: ADMIN_DEFAULT_USER_ID
               value: "00000000-0000-0000-0000-000000000001"
+            - name: USER_SERVICE_URL
+              value: "http://user-service:8002"
           ports:
             - containerPort: 8001
               name: http
