@@ -139,3 +139,4 @@ export const AssignDeviceModal: React.FC<AssignDeviceModalProps> = ({
     </Modal>
   );
 };
+

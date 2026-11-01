@@ -174,3 +174,4 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({ isOpen, onClose, onSuc
     </Modal>
   );
 };
+
