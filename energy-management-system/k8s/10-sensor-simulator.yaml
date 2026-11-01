@@ -25,9 +25,9 @@ spec:
             - name: DEVICE_SERVICE_URL
               value: "http://device-service:8003"
             - name: SIMULATION_INTERVAL_SECONDS
-              value: "3.0"
+              value: "30.0"
             - name: ENABLE_SPIKES
-              value: "true"
+              value: "false"
             - name: SPIKE_EVERY
-              value: "8"
+              value: "30"
 

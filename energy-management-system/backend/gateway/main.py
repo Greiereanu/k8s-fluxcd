@@ -220,3 +220,4 @@ async def gateway_reverse_proxy(path: str, request: Request):
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 content={"detail": f"Downstream microservice unreachable: {exc!s}"},
             )
+

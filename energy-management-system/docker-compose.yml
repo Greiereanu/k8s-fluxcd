@@ -133,7 +133,8 @@ services:
     environment:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - DEVICE_SERVICE_URL=http://device-service:8003
-      - SIMULATION_INTERVAL_SECONDS=3.0
+      - SIMULATION_INTERVAL_SECONDS=30.0
+      - ENABLE_SPIKES=false
     depends_on:
       rabbitmq:
         condition: service_healthy

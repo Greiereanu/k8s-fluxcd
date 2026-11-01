@@ -18,11 +18,11 @@ logger = logging.getLogger("sensor-simulator")
 
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
 DEVICE_SERVICE_URL = os.getenv("DEVICE_SERVICE_URL", "http://localhost:8003")
-SIMULATION_INTERVAL = float(os.getenv("SIMULATION_INTERVAL_SECONDS", "3.0"))
+SIMULATION_INTERVAL = float(os.getenv("SIMULATION_INTERVAL_SECONDS", "30.0"))
 EXCHANGE_NAME = os.getenv("RABBITMQ_EXCHANGE", "sensor_exchange")
 ROUTING_KEY = os.getenv("RABBITMQ_ROUTING_KEY", "sensor.reading")
-ENABLE_SPIKES = os.getenv("ENABLE_SPIKES", "true").lower() in ("true", "1", "yes")
-SPIKE_EVERY = int(os.getenv("SPIKE_EVERY", "8"))
+ENABLE_SPIKES = os.getenv("ENABLE_SPIKES", "false").lower() in ("true", "1", "yes")
+SPIKE_EVERY = int(os.getenv("SPIKE_EVERY", "30"))
 
 running = True
 
