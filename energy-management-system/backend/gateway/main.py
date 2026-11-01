@@ -109,6 +109,12 @@ async def gateway_reverse_proxy(path: str, request: Request):
             )
 
         if user_payload.role != UserRole.ADMIN:
+            if downstream_path.startswith("/auth/impersonate"):
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content={"detail": "Administrator role required for user impersonation"},
+                )
+
             if downstream_path.startswith("/users") and downstream_path != "/users/me":
                 return JSONResponse(
                     status_code=status.HTTP_403_FORBIDDEN,

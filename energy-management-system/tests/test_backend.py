@@ -136,8 +136,30 @@ def test_full_pipeline():
         assert my_devices[0]["id"] == dev1_id
         assert my_devices[0]["max_consumption"] == 4.5
 
-        # 10. Admin updates Device 1
-        print("\n[Step 10] Admin updating Device 1 max consumption...")
+        # 10. Admin impersonation test
+        print(f"\n[Step 10] Admin impersonating Client '{client_username}'...")
+        r = client.post(f"/api/v1/auth/impersonate/{client_user_id}", headers=admin_headers)
+        assert r.status_code == 200, f"Admin impersonation failed: {r.text}"
+        impersonation_auth = r.json()
+        assert impersonation_auth["user_id"] == client_user_id
+        assert impersonation_auth["role"] == "CLIENT"
+        impersonated_headers = {"Authorization": f"Bearer {impersonation_auth['access_token']}"}
+        print(f"Impersonation token received for user {impersonation_auth['username']}")
+
+        # Impersonated session views client's devices
+        r = client.get("/api/v1/devices/my-devices", headers=impersonated_headers)
+        assert r.status_code == 200, f"Impersonated device view failed: {r.text}"
+        assert len(r.json()) == 1
+        print("Impersonated session successfully accessed client devices")
+
+        # Security check: Client attempts impersonation
+        print("\n[Step 10b] Security Check: Client attempts to impersonate Admin...")
+        r = client.post(f"/api/v1/auth/impersonate/{admin_auth['user_id']}", headers=client_headers)
+        assert r.status_code == 403, f"Expected 403 Forbidden, got {r.status_code}: {r.text}"
+        print("Impersonation by non-admin blocked with 403 Forbidden")
+
+        # 11. Admin updates Device 1
+        print("\n[Step 11] Admin updating Device 1 max consumption...")
         r = client.put(
             f"/api/v1/devices/{dev1_id}",
             headers=admin_headers,
@@ -147,8 +169,8 @@ def test_full_pipeline():
         assert r.json()["max_consumption"] == 5.0
         print("Device 1 max_consumption updated to 5.0 kWh")
 
-        # 11. Admin deletes User and verifies unassignment
-        print(f"\n[Step 11] Admin deleting Client user {client_user_id}...")
+        # 12. Admin deletes User and verifies unassignment
+        print(f"\n[Step 12] Admin deleting Client user {client_user_id}...")
         r = client.delete(f"/api/v1/users/{client_user_id}", headers=admin_headers)
         assert r.status_code == 200, f"Failed to delete user: {r.text}"
         print(f"User deleted: {r.json()['message']}")
@@ -171,7 +193,7 @@ def test_full_pipeline():
         print("Deleted client cannot login (401 Unauthorized)")
 
         print("\n" + "=" * 60)
-        print("All 11 tests passed successfully.")
+        print("All tests passed successfully.")
         print("=" * 60)
 
 

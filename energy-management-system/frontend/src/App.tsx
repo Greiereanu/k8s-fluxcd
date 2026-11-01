@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { Navbar } from "./components/Navbar";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -32,6 +33,7 @@ const ProtectedRoute: React.FC<{
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
+      <ImpersonationBanner />
       <Navbar />
       <main className="flex-1">{children}</main>
     </div>

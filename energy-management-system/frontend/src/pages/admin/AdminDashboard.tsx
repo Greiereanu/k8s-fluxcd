@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { usersApi, devicesApi } from "../../api/client";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { usersApi, devicesApi, authApi } from "../../api/client";
 import { User, Device } from "../../types";
 import { UserModal } from "./UserModal";
 import { DeviceModal } from "./DeviceModal";
@@ -16,9 +18,12 @@ import {
   Search,
   Activity,
   AlertCircle,
+  Eye,
 } from "lucide-react";
 
 export const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const { impersonate } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [activeTab, setActiveTab] = useState<"users" | "devices">("users");
@@ -69,6 +74,16 @@ export const AdminDashboard: React.FC = () => {
       fetchData();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete user");
+    }
+  };
+
+  const handleImpersonateUser = async (user: User) => {
+    try {
+      const authData = await authApi.impersonate(user.id);
+      impersonate(authData);
+      navigate("/client/dashboard");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to impersonate user");
     }
   };
 
@@ -318,6 +333,13 @@ export const AdminDashboard: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="inline-flex space-x-2">
+                          <button
+                            onClick={() => handleImpersonateUser(u)}
+                            className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title={`Login As ${u.username}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => {
                               setUserToEdit(u);

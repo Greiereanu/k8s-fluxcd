@@ -8,7 +8,8 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.common.models import MessageResponse, TokenResponse, UserRole
+from backend.common.auth import require_admin
+from backend.common.models import CurrentUser, MessageResponse, TokenResponse, UserRole
 from backend.common.security import (
     create_access_token,
     decode_access_token,
@@ -165,6 +166,55 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     )
 
 
+@app.post(
+    "/auth/impersonate/{user_id}",
+    response_model=TokenResponse,
+    tags=["Auth"],
+)
+async def impersonate_user(
+    user_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    admin_user: CurrentUser = Depends(require_admin),
+):
+    """Admin only: issue a valid access token to log in as any user without password."""
+    stmt = select(Credential).where(Credential.user_id == user_id)
+    result = await db.execute(stmt)
+    cred = result.scalar_one_or_none()
+    if not cred:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID '{user_id}' not found in credentials",
+        )
+
+    if not cred.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot impersonate a deactivated user account",
+        )
+
+    access_token = create_access_token(
+        user_id=cred.user_id,
+        username=cred.username,
+        role=UserRole(cred.role),
+    )
+
+    logger.info(
+        "Admin '%s' (%s) impersonated user '%s' (%s)",
+        admin_user.username,
+        admin_user.user_id,
+        cred.username,
+        cred.user_id,
+    )
+
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user_id=cred.user_id,
+        username=cred.username,
+        role=UserRole(cred.role),
+    )
+
+
 @app.post("/auth/verify", response_model=TokenVerifyResponse, tags=["Auth"])
 async def verify_token(req: TokenVerifyRequest):
     token_payload = decode_access_token(req.token)
@@ -185,9 +235,7 @@ async def list_credentials(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
-@app.put(
-    "/auth/credentials/{user_id}", response_model=CredentialResponse, tags=["Internal"]
-)
+@app.put("/auth/credentials/{user_id}", response_model=CredentialResponse, tags=["Internal"])
 async def update_credential(
     user_id: uuid.UUID,
     req: CredentialUpdate,
